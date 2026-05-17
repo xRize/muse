@@ -1,7 +1,5 @@
-<<<<<<< HEAD
-# muse
-Muse is a terminal-first music streamer, downloader, and player inspired by Rhythm. It’s built around speed, low overhead, and a clean CLI workflow.
-=======
+<img width="600" height="600" alt="muse logo" src="https://github.com/user-attachments/assets/c5d3bb3b-76b4-405c-8b7a-526d65353498" />
+
 # Muse
 
 **Muse** is a terminal-first music streamer, downloader, and player inspired by Rhythm. It’s built around speed, low overhead, and a clean CLI workflow.
@@ -83,6 +81,9 @@ PRO TIP: Miniplayer
 watch -t -n 0.1 muse status
 ```
 
+<img width="800" height="503" alt="ezgif-3feedac2e4001ccd" src="https://github.com/user-attachments/assets/551c33d1-68eb-4585-9a01-1bff37f3bdf7" />
+
+
 ---
 
 ## Commands
@@ -142,5 +143,3 @@ This approach keeps startup times low while allowing playback to continue indepe
 ## License
 
 MIT License.
-
->>>>>>> ae66f6b (Initial commit)
