@@ -1,0 +1,9 @@
+[playback]
+volume = 100
+mpv_ipc_path = "/tmp/muse-mpv.sock"
+
+[library]
+paths = ["~/Music"]
+
+[youtube]
+enabled = true
