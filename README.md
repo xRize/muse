@@ -1,8 +1,5 @@
-<<<<<<< HEAD
 <img width="600" height="600" alt="muse logo" src="https://github.com/user-attachments/assets/c5d3bb3b-76b4-405c-8b7a-526d65353498" />
 
-=======
->>>>>>> 35e44b6 (added playlist support)
 # Muse
 
 **Muse** is a terminal-first music streamer, downloader, and player inspired by Rhythm. It’s built around speed, low overhead, and a clean CLI workflow.
