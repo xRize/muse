@@ -7,6 +7,7 @@ from muse.models.config import load_config
 from muse.models.track import Track
 from muse.playback.mpv_controller import MPVController
 from muse.models.queue import QueueManager
+from muse.models.playlist import PlaylistManager
 from muse.providers.youtube import YouTubeProvider
 from muse.providers.local import LocalProvider
 from muse.providers.cache import DownloadManager
@@ -20,6 +21,7 @@ class MuseDaemon:
         self.config = load_config()
         self.controller = MPVController(self.config)
         self.queue_manager = QueueManager()
+        self.playlist_manager = PlaylistManager()
         self.youtube = YouTubeProvider()
         self.local = LocalProvider(self.config)
         self.downloader = DownloadManager()
@@ -204,6 +206,11 @@ class MuseDaemon:
                 self.save_state()
                 return {"status": "ok", "message": f"Queue looping {'enabled' if enabled else 'disabled'}"}
 
+            elif command == "shuffle":
+                self.queue_manager.shuffle()
+                self.save_state()
+                return {"status": "ok", "message": "Queue shuffled"}
+
             elif command == "list":
                 self.local.scan()
                 tracks = list(self.local.index.values())
@@ -306,6 +313,85 @@ class MuseDaemon:
                 # Start download in background task
                 asyncio.create_task(self.downloader.download(track))
                 return {"status": "ok", "message": f"Started download of {track.title} - {track.artist}"}
+
+            elif command.startswith("playlist_"):
+                pl_command = command.split("_", 1)[1]
+                name = params.get("name")
+                
+                if pl_command == "create":
+                    if self.playlist_manager.create(name):
+                        return {"status": "ok", "message": f"Playlist '{name}' created"}
+                    return {"status": "error", "message": f"Playlist '{name}' already exists"}
+                
+                elif pl_command == "delete":
+                    if self.playlist_manager.delete(name):
+                        return {"status": "ok", "message": f"Playlist '{name}' deleted"}
+                    return {"status": "error", "message": f"Playlist '{name}' not found"}
+                
+                elif pl_command == "list":
+                    playlists = self.playlist_manager.list_playlists()
+                    return {"status": "ok", "data": playlists}
+                
+                elif pl_command == "get":
+                    playlist = self.playlist_manager.get_playlist(name)
+                    if not playlist:
+                        return {"status": "error", "message": f"Playlist '{name}' not found"}
+                    return {"status": "ok", "data": playlist.to_dict()}
+                
+                elif pl_command == "add":
+                    playlist = self.playlist_manager.get_playlist(name)
+                    if not playlist:
+                        return {"status": "error", "message": f"Playlist '{name}' not found"}
+                    
+                    query = params.get("query")
+                    track = await self._resolve_track(query)
+                    if not track:
+                        return {"status": "error", "message": f"No results for: {query}"}
+                    
+                    playlist.tracks.append(track)
+                    self.playlist_manager.save()
+                    return {"status": "ok", "message": f"Added {track.title} to playlist '{name}'"}
+                
+                elif pl_command == "candidates":
+                    playlist = self.playlist_manager.get_playlist(name)
+                    if not playlist:
+                        return {"status": "error", "message": f"Playlist '{name}' not found"}
+                    
+                    self.local.scan()
+                    all_local = list(self.local.index.values())
+                    playlist_track_ids = {t.id for t in playlist.tracks}
+                    
+                    candidates = [t.to_dict() for t in all_local if t.id not in playlist_track_ids]
+                    return {"status": "ok", "data": candidates}
+                
+                elif pl_command == "remove_indices":
+                    playlist = self.playlist_manager.get_playlist(name)
+                    if not playlist:
+                        return {"status": "error", "message": f"Playlist '{name}' not found"}
+                    
+                    indices = sorted(params.get("indices", []), reverse=True)
+                    removed = 0
+                    for idx in indices:
+                        if 0 <= idx < len(playlist.tracks):
+                            playlist.tracks.pop(idx)
+                            removed += 1
+                    
+                    self.playlist_manager.save()
+                    return {"status": "ok", "message": f"Removed {removed} tracks from playlist '{name}'"}
+                
+                elif pl_command == "play":
+                    playlist = self.playlist_manager.get_playlist(name)
+                    if not playlist:
+                        return {"status": "error", "message": f"Playlist '{name}' not found"}
+                    
+                    for track in playlist.tracks:
+                        self.queue_manager.add(track)
+                    
+                    if not self.queue_manager.current:
+                        await self.play_next()
+                    
+                    self.save_state()
+                    return {"status": "ok", "message": f"Added playlist '{name}' to queue"}
 
             elif command == "quit":
                 asyncio.create_task(self.shutdown())

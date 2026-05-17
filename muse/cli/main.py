@@ -137,6 +137,12 @@ def loopqueue():
     response = run_async(send_command({"command": "loopqueue"}))
     typer.echo(response.get("message", response))
 
+@app.command(name="shuffle")
+def shuffle():
+    """Shuffle the current queue."""
+    response = run_async(send_command({"command": "shuffle"}))
+    typer.echo(response.get("message", response))
+
 @app.command(name="l", hidden=True)
 def l():
     """Short handle for loopqueue."""
@@ -253,6 +259,144 @@ def download(query: str):
         "params": {"query": query}
     }))
     typer.echo(response.get("message", response))
+
+@app.command(name="delete")
+def top_delete(name: str):
+    """Delete a playlist."""
+    response = run_async(send_command({
+        "command": "playlist_delete",
+        "params": {"name": name}
+    }))
+    typer.echo(response.get("message", response))
+
+playlist_app = typer.Typer(help="Playlist management commands")
+app.add_typer(playlist_app, name="playlist")
+
+@playlist_app.command("create")
+def playlist_create(name: str):
+    """Create a new empty playlist."""
+    response = run_async(send_command({
+        "command": "playlist_create",
+        "params": {"name": name}
+    }))
+    typer.echo(response.get("message", response))
+
+@playlist_app.command("remove")
+def playlist_remove(name: str):
+    """Remove songs from a playlist."""
+    # First get the playlist
+    response = run_async(send_command({
+        "command": "playlist_get",
+        "params": {"name": name}
+    }))
+    if response.get("status") != "ok":
+        typer.echo(response.get("message", "Error fetching playlist"))
+        return
+    
+    playlist = response.get("data", {})
+    tracks = playlist.get("tracks", [])
+    if not tracks:
+        typer.echo(f"Playlist '{name}' is empty.")
+        return
+    
+    typer.echo(f"Tracks in playlist '{name}':")
+    for i, t in enumerate(tracks):
+        typer.echo(f"{i}. {t['title']} - {t['artist']}")
+    
+    indices_str = typer.prompt("Enter indices to remove (comma-separated)")
+    try:
+        indices = [int(i.strip()) for i in indices_str.split(",") if i.strip()]
+        if not indices:
+            return
+        
+        response = run_async(send_command({
+            "command": "playlist_remove_indices",
+            "params": {"name": name, "indices": indices}
+        }))
+        typer.echo(response.get("message", response))
+    except ValueError:
+        typer.echo("Invalid input. Please enter numbers separated by commas.")
+
+@playlist_app.command("add")
+def playlist_add(name: str, query: Optional[str] = typer.Argument(None)):
+    """Add a song to a playlist."""
+    if query:
+        response = run_async(send_command({
+            "command": "playlist_add",
+            "params": {"name": name, "query": query}
+        }))
+        typer.echo(response.get("message", response))
+    else:
+        # Get all local tracks and current playlist tracks
+        response = run_async(send_command({"command": "list"}))
+        # Wait, 'list' returns a string in current implementation.
+        # I should add a command that returns raw track data.
+        
+        # Let's add 'playlist_get_candidates' to daemon or similar
+        # For now, let's use search with '*' or similar if supported, or fix 'list'
+        
+        # Let's use a new daemon command 'playlist_candidates'
+        response = run_async(send_command({
+            "command": "playlist_candidates",
+            "params": {"name": name}
+        }))
+        if response.get("status") != "ok":
+            typer.echo(response.get("message", "Error fetching candidates"))
+            return
+        
+        candidates = response.get("data", [])
+        if not candidates:
+            typer.echo("No new local tracks found to add.")
+            return
+        
+        typer.echo(f"Available tracks to add to '{name}':")
+        for i, t in enumerate(candidates):
+            typer.echo(f"{i}. {t['title']} - {t['artist']}")
+        
+        indices_str = typer.prompt("Enter indices to add (comma-separated)")
+        try:
+            indices = [int(i.strip()) for i in indices_str.split(",") if i.strip()]
+            if not indices:
+                return
+            
+            # Add them one by one or add a bulk add command
+            added = 0
+            for idx in indices:
+                if 0 <= idx < len(candidates):
+                    track = candidates[idx]
+                    # We can use the track ID or title
+                    run_async(send_command({
+                        "command": "playlist_add",
+                        "params": {"name": name, "query": track['id']}
+                    }))
+                    added += 1
+            typer.echo(f"Added {added} tracks to playlist '{name}'")
+        except ValueError:
+            typer.echo("Invalid input. Please enter numbers separated by commas.")
+
+@playlist_app.command("play")
+def playlist_play(name: str):
+    """Play a playlist (adds all tracks to queue)."""
+    response = run_async(send_command({
+        "command": "playlist_play",
+        "params": {"name": name}
+    }))
+    typer.echo(response.get("message", response))
+
+@playlist_app.command("list")
+def playlist_list():
+    """List all available playlists."""
+    response = run_async(send_command({"command": "playlist_list"}))
+    if response.get("status") == "ok":
+        playlists = response.get("data", [])
+        if not playlists:
+            typer.echo("No playlists found.")
+        else:
+            typer.echo("Playlists:")
+            for pl in playlists:
+                typer.echo(f" - {pl}")
+    else:
+        typer.echo(response.get("message", response))
 
 daemon_app = typer.Typer(help="Daemon management commands")
 app.add_typer(daemon_app, name="daemon")

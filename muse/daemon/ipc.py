@@ -19,7 +19,7 @@ class IPCServer:
             await server.serve_forever()
 
     async def handle_client(self, reader, writer):
-        data = await reader.read(4096)
+        data = await reader.read()
         if not data:
             writer.close()
             return
@@ -29,6 +29,7 @@ class IPCServer:
             logger.debug(f"Received message: {message}")
             response = await self.handler(message)
             writer.write(json.dumps(response).encode())
+            writer.write_eof()
             await writer.drain()
         except Exception as e:
             logger.error(f"Error handling client: {e}")
@@ -44,9 +45,10 @@ async def send_command(command: dict):
 
     reader, writer = await asyncio.open_unix_connection(socket_path)
     writer.write(json.dumps(command).encode())
+    writer.write_eof()
     await writer.drain()
 
-    data = await reader.read(4096)
+    data = await reader.read()
     writer.close()
     await writer.wait_closed()
     

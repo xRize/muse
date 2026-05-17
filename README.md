@@ -1,5 +1,8 @@
+<<<<<<< HEAD
 <img width="600" height="600" alt="muse logo" src="https://github.com/user-attachments/assets/c5d3bb3b-76b4-405c-8b7a-526d65353498" />
 
+=======
+>>>>>>> 35e44b6 (added playlist support)
 # Muse
 
 **Muse** is a terminal-first music streamer, downloader, and player inspired by Rhythm. It’s built around speed, low overhead, and a clean CLI workflow.
@@ -17,6 +20,7 @@ Unlike most terminal music players, Muse uses a daemon-based architecture. Your 
 * Automatic downloads and caching
 * Persistent queue and playback state
 * Queue looping and shuffle support
+* Playlist management
 * Powered by `mpv` for playback
 
 ---
@@ -63,22 +67,18 @@ Queue a song:
 muse queue "radiohead nude"
 ```
 
-Pause playback:
+Create and use a playlist:
 
 ```bash
-muse pause
-```
-
-Skip to the next track:
-
-```bash
-muse next
+muse playlist create "Favorites"
+muse playlist add "Favorites" "Back In Black"
+muse playlist play "Favorites"
 ```
 
 PRO TIP: Miniplayer
 
 ```bash
-watch -t -n 0.1 muse status
+watch -t -n 1 muse status
 ```
 
 <img width="800" height="503" alt="ezgif-3feedac2e4001ccd" src="https://github.com/user-attachments/assets/551c33d1-68eb-4585-9a01-1bff37f3bdf7" />
@@ -88,21 +88,29 @@ watch -t -n 0.1 muse status
 
 ## Commands
 
-| Command             | Short Alias | Description                                |
-| ------------------- | ----------- | ------------------------------------------ |
-| `play [query]`      | `p`         | Play a track or resume playback            |
-| `queue [query]`     | `q`         | Add a track to the queue or show the queue |
-| `pause`             | —           | Pause playback                             |
-| `stop`              | —           | Stop playback and clear the queue          |
-| `next` / `skip`     | —           | Skip to the next track                     |
-| `prev`              | —           | Return to the previous track               |
-| `loopqueue`         | `l`         | Toggle queue looping                       |
-| `search <query>`    | `s`         | Search local and YouTube tracks            |
-| `list`              | `ls`        | List available local tracks                |
-| `current`           | —           | Show the currently playing track           |
-| `volume <0-100>`    | —           | Set playback volume                        |
-| `download <query>`  | —           | Download a track to the local library      |
-| `daemon start/stop` | —           | Manually manage the daemon                 |
+| Command                     | Short Alias | Description                                        |
+| --------------------------- | ----------- | -------------------------------------------------- |
+| `play [query]`              | `p`         | Play a track or resume playback                    |
+| `queue [query]`             | `q`         | Add a track to the queue or show the queue         |
+| `shuffle`                   | —           | Shuffle the current queue                          |
+| `pause`                     | —           | Pause playback                                     |
+| `stop`                      | —           | Stop playback and clear the queue                  |
+| `next` / `skip`             | —           | Skip to the next track                             |
+| `prev`                      | —           | Return to the previous track                       |
+| `loopqueue`                 | `l`         | Toggle queue looping                               |
+| `search <query>`            | `s`         | Search local and YouTube tracks                    |
+| `list`                      | `ls`        | List available local tracks                        |
+| `current`                   | —           | Show the currently playing track                   |
+| `status`                    | `st`        | Show detailed playback status                      |
+| `volume <0-100>`            | —           | Set playback volume                                |
+| `download <query>`          | —           | Download a track to the local library              |
+| `playlist create <name>`    | —           | Create a new empty playlist                        |
+| `playlist add <name> [q]`   | —           | Add a track to a playlist (interactive if q omitted) |
+| `playlist remove <name>`    | —           | Remove tracks from a playlist (interactive)        |
+| `playlist list`             | —           | List all available playlists                       |
+| `playlist play <name>`      | —           | Add all tracks from a playlist to the queue        |
+| `delete <name>`             | —           | Delete a playlist                                  |
+| `daemon start/stop`         | —           | Manually manage the daemon                         |
 
 ---
 
@@ -112,6 +120,7 @@ watch -t -n 0.1 muse status
 | --------------------- | ----------------------------------- |
 | `~/.muse/config.toml` | Configuration                       |
 | `~/.muse/state.json`  | Persistent queue and playback state |
+| `~/.muse/playlists.json` | Saved playlists                  |
 | `~/.muse/downloads/`  | Downloaded tracks                   |
 | `~/.muse/muse.log`    | Logs                                |
 | `~/.muse/muse.sock`   | Unix socket used by the daemon      |
@@ -133,7 +142,6 @@ This approach keeps startup times low while allowing playback to continue indepe
 
 ## Planned Features
 
-* Playlist support
 * Lyrics integration
 * TUI mode
 * Multi-source streaming support
