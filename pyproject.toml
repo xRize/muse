@@ -1,0 +1,28 @@
+[project]
+name = "muse"
+version = "0.1.0"
+description = "A terminal-first music streamer/downloader/player"
+authors = [
+    {name = "Junie", email = "junie@jetbrains.com"}
+]
+dependencies = [
+    "typer[all]",
+    "ytmusicapi",
+    "yt-dlp",
+    "rapidfuzz",
+    "loguru",
+    "mutagen",
+    "python-mpv-jsonipc",
+]
+requires-python = ">=3.12"
+
+[project.scripts]
+muse = "muse.cli.main:app"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["muse*"]
